@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 
+/// Scans the project for unused localization keys and removes them from `.arb` files.
 void runLocalizationCleaner() {
   final Directory localizationDir = Directory(
     'lib/l10n',
