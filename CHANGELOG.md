@@ -5,3 +5,5 @@
 - 🔍 Excludes important localization files to prevent accidental deletions.
 - 📊 Provides detailed output on removed keys.
 
+## 0.0.2 - Fixes for Initial Release
+
