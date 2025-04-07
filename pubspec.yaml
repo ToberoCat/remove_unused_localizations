@@ -9,8 +9,8 @@ environment:
   sdk: ^3.7.0
   flutter: ">=1.17.0"
 
-executables:
-  remove_unused_localizations: main
+#executables:
+#  remove_unused_localizations: main
 
 dependencies:
   flutter:

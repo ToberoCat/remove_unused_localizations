@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:developer';
+// import 'dart:developer';
 import 'dart:io';
 import 'package:yaml/yaml.dart';
 
@@ -7,7 +7,7 @@ import 'package:yaml/yaml.dart';
 void runLocalizationCleaner({bool keepUnused = false}) {
   final File yamlFile = File('l10n.yaml'); // Path to the l10n.yaml file
   if (!yamlFile.existsSync()) {
-    log('Error: l10n.yaml file not found!');
+    print('Error: l10n.yaml file not found!');
     return;
   }
 
@@ -31,7 +31,7 @@ void runLocalizationCleaner({bool keepUnused = false}) {
           .toList();
 
   if (localizationFiles.isEmpty) {
-    log('No .arb files found in ${localizationDir.path}');
+    print('No .arb files found in ${localizationDir.path}');
     return;
   }
 
@@ -87,17 +87,17 @@ void runLocalizationCleaner({bool keepUnused = false}) {
   // Determine unused keys
   final Set<String> unusedKeys = allKeys.difference(usedKeys);
   if (unusedKeys.isEmpty) {
-    log('No unused localization keys found.');
+    print('No unused localization keys found.');
     return;
   }
 
-  log("Unused keys found: ${unusedKeys.join(', ')}");
+  print("Unused keys found: ${unusedKeys.join(', ')}");
 
   if (keepUnused) {
     // Keep unused keys to a file instead of deleting them
     final File unusedKeysFile = File('unused_localization_keys.txt');
     unusedKeysFile.writeAsStringSync(unusedKeys.join('\n'));
-    log('✅ Unused keys saved to ${unusedKeysFile.path}');
+    print('✅ Unused keys saved to ${unusedKeysFile.path}');
   } else {
     // Remove unused keys from all .arb files
     for (final MapEntry<File, Set<String>> entry in fileKeyMap.entries) {
@@ -119,9 +119,9 @@ void runLocalizationCleaner({bool keepUnused = false}) {
         file.writeAsStringSync(
           const JsonEncoder.withIndent('  ').convert(data),
         );
-        log('Updated ${file.path}, removed unused keys.');
+        print('Updated ${file.path}, removed unused keys.');
       }
     }
-    log('✅ Unused keys successfully removed.');
+    print('✅ Unused keys successfully removed.');
   }
 }
