@@ -7,8 +7,5 @@ void main(List<String> arguments) {
 
   print('Running Localization Cleaner...');
   runLocalizationCleaner(keepUnused: keepUnused);
-  if (keepUnused) {
-    print('✅ Unused keys saved to unused_localization_keys.txt');
-  }
   print('Done.');
 }
