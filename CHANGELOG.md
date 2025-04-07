@@ -19,3 +19,7 @@
 -  🧠 Smarter key detection: Better regex accuracy for detecting used localization keys.
 -  📦 Improved CLI structure: Now works properly as a CLI tool and prints output to the terminal.
 -  🧪 General refactoring and stability improvements.
+
+## 1.0.1 - Documentation Update
+- 📝 Updated `README.md` with detailed usage instructions, examples, and feature descriptions.
+- ✅ Improved overall clarity for installation and usage on pub.dev.
