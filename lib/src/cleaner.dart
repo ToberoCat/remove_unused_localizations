@@ -7,7 +7,7 @@ import 'package:yaml/yaml.dart';
 void runLocalizationCleaner({bool keepUnused = false}) {
   final File yamlFile = File('l10n.yaml'); // Path to the l10n.yaml file
   if (!yamlFile.existsSync()) {
-    print('Error: l10n.yaml file not found!');
+    print('✅ Error: l10n.yaml file not found!');
     return;
   }
 
@@ -31,7 +31,7 @@ void runLocalizationCleaner({bool keepUnused = false}) {
           .toList();
 
   if (localizationFiles.isEmpty) {
-    print('No .arb files found in ${localizationDir.path}');
+    print('✅ No .arb files found in ${localizationDir.path}');
     return;
   }
 
@@ -54,7 +54,7 @@ void runLocalizationCleaner({bool keepUnused = false}) {
   // Reg Exp to detect localization keys
   final String keysPattern = allKeys.map(RegExp.escape).join('|');
   final RegExp regex = RegExp(
-    r'(?:' // Start non-capturing group for all possible access patterns
+    r'''(?:' // Start non-capturing group for all possible access patterns
             r'(?:[a-zA-Z0-9_]+\.)+' // e.g., `_appLocalizations.` or `cubit.appLocalizations.`
             r'|'
             r'[a-zA-Z0-9_]+\.of\(\s*(?:context|AppNavigation\.context|this\.context|BuildContext\s+\w+)\s*\)\!?\s*\.\s*' // `of(context)!.key` with optional whitespace
@@ -63,7 +63,7 @@ void runLocalizationCleaner({bool keepUnused = false}) {
             r')'
             r'(' +
         keysPattern +
-        r')\b', // The actual key
+        r')\b''', // The actual key
     multiLine: true,
     dotAll: true, // Makes `.` match newlines (crucial for multi-line cases)
   );
@@ -87,11 +87,11 @@ void runLocalizationCleaner({bool keepUnused = false}) {
   // Determine unused keys
   final Set<String> unusedKeys = allKeys.difference(usedKeys);
   if (unusedKeys.isEmpty) {
-    print('No unused localization keys found.');
+    print('✅ No unused localization keys found.');
     return;
   }
 
-  print("Unused keys found: ${unusedKeys.join(', ')}");
+  print("✅ Unused keys found: ${unusedKeys.join(', ')}");
 
   if (keepUnused) {
     // Keep unused keys to a file instead of deleting them
@@ -119,7 +119,7 @@ void runLocalizationCleaner({bool keepUnused = false}) {
         file.writeAsStringSync(
           const JsonEncoder.withIndent('  ').convert(data),
         );
-        print('Updated ${file.path}, removed unused keys.');
+        print('✅ Updated ${file.path}, removed unused keys.');
       }
     }
     print('✅ Unused keys successfully removed.');
