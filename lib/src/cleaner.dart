@@ -1,13 +1,27 @@
 import 'dart:convert';
-import 'dart:developer';
 import 'dart:io';
+import 'package:yaml/yaml.dart';
 
 /// Scans the project for unused localization keys and removes them from `.arb` files.
 void runLocalizationCleaner({bool keepUnused = false}) {
-  final Directory localizationDir = Directory('lib/l10n');
-  final Set<String> excludedFiles = {'lib/l10n/app_localizations.dart'};
+  final File yamlFile = File('l10n.yaml'); // Path to the l10n.yaml file
+  if (!yamlFile.existsSync()) {
+    print('✅ Error: l10n.yaml file not found!');
+    return;
+  }
 
-  // Get all .arb files dynamically
+  // Read & parse YAML
+  final String yamlContent = yamlFile.readAsStringSync();
+  final Map yamlData = loadYaml(yamlContent);
+
+  // Extract values dynamically
+  final String arbDir = yamlData['arb-dir'] as String;
+
+  // Construct values
+  final Directory localizationDir = Directory(arbDir);
+  final Set<String> excludedFiles = {'$arbDir/app_localizations.dart'};
+
+  // Read .arb file
   final List<File> localizationFiles =
       localizationDir
           .listSync()
@@ -16,7 +30,7 @@ void runLocalizationCleaner({bool keepUnused = false}) {
           .toList();
 
   if (localizationFiles.isEmpty) {
-    log('No .arb files found in ${localizationDir.path}');
+    print('✅ No .arb files found in ${localizationDir.path}');
     return;
   }
 
@@ -36,26 +50,35 @@ void runLocalizationCleaner({bool keepUnused = false}) {
   final Set<String> usedKeys = <String>{};
   final Directory libDir = Directory('lib');
 
+  // Reg Exp to detect localization keys
+  final String keysPattern = allKeys.map(RegExp.escape).join('|');
+  final RegExp regex = RegExp(
+    r'(?:' // Start non-capturing group for all possible access patterns
+            r'(?:[a-zA-Z0-9_]+\.)+' // e.g., `_appLocalizations.` or `cubit.appLocalizations.`
+            r'|'
+            r'[a-zA-Z0-9_]+\.of\(\s*(?:context|AppNavigation\.context|this\.context|BuildContext\s+\w+)\s*\)\!?\s*\.\s*' // `of(context)!.key` with optional whitespace
+            r'|'
+            r'[a-zA-Z0-9_]+\.\w+\(\s*\)\s*\.\s*' // `SomeClass.method().key`
+            r')'
+            r'(' +
+        keysPattern +
+        r')\b', // The actual key
+    multiLine: true,
+    dotAll: true, // Makes `.` match newlines (crucial for multi-line cases)
+  );
+
   // Scan Dart files for key usage
   for (final FileSystemEntity file in libDir.listSync(recursive: true)) {
     if (file is File &&
         file.path.endsWith('.dart') &&
         !excludedFiles.contains(file.path)) {
       final String content = file.readAsStringSync();
-      for (final String key in allKeys) {
-        if (RegExp(
-              r'\blocalizations\.' + RegExp.escape(key) + r'\b',
-            ).hasMatch(content) ||
-            RegExp(
-              r'\bS\.of\(context\)\.' + RegExp.escape(key) + r'\b',
-            ).hasMatch(content) ||
-            RegExp(
-              r'\bAppLocalizations\.of\(context\)!.' +
-                  RegExp.escape(key) +
-                  r'\b',
-            ).hasMatch(content)) {
-          usedKeys.add(key);
-        }
+
+      // Quick pre-check: skip files that don't contain any key substring
+      if (!content.contains(RegExp(keysPattern))) continue;
+
+      for (final Match match in regex.allMatches(content)) {
+        usedKeys.add(match.group(1)!); // Capture only the key
       }
     }
   }
@@ -63,17 +86,17 @@ void runLocalizationCleaner({bool keepUnused = false}) {
   // Determine unused keys
   final Set<String> unusedKeys = allKeys.difference(usedKeys);
   if (unusedKeys.isEmpty) {
-    log('No unused localization keys found.');
+    print('✅ No unused localization keys found.');
     return;
   }
 
-  log("Unused keys found: ${unusedKeys.join(', ')}");
+  print("✅ Unused keys found: ${unusedKeys.join(', ')}");
 
   if (keepUnused) {
     // Keep unused keys to a file instead of deleting them
     final File unusedKeysFile = File('unused_localization_keys.txt');
     unusedKeysFile.writeAsStringSync(unusedKeys.join('\n'));
-    log('✅ Unused keys saved to ${unusedKeysFile.path}');
+    print('✅ Unused keys saved to ${unusedKeysFile.path}');
   } else {
     // Remove unused keys from all .arb files
     for (final MapEntry<File, Set<String>> entry in fileKeyMap.entries) {
@@ -95,9 +118,9 @@ void runLocalizationCleaner({bool keepUnused = false}) {
         file.writeAsStringSync(
           const JsonEncoder.withIndent('  ').convert(data),
         );
-        log('Updated ${file.path}, removed unused keys.');
+        print('✅ Updated ${file.path}, removed unused keys.');
       }
     }
-    log('✅ Unused keys successfully removed.');
+    print('✅ Unused keys successfully removed.');
   }
 }

@@ -24,7 +24,7 @@ Add the package to your **dev dependencies** in `pubspec.yaml`:
 
 ```yaml
 dev_dependencies:
-  remove_unused_localizations: ^0.0.4
+  remove_unused_localizations: ^0.1.0
 ```
 
 Run:
