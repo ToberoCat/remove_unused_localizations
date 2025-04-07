@@ -12,3 +12,7 @@
 ## 0.0.4 - Add New Feature
 - 🎉 Add new feature to not automatically remove unused localization keys from `lib` folder (If needed).
 
+## 0.1.0 - Add New Feature
+- 🚀 Improve speed.
+- 
+

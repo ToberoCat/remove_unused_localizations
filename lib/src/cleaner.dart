@@ -3,9 +3,9 @@ import 'dart:developer';
 import 'dart:io';
 import 'package:yaml/yaml.dart';
 
-/// Read l10n.yaml and checking (now Flutter Depracte Flutter_gen and l10n became required at all )
+/// Scans the project for unused localization keys and removes them from `.arb` files.
 void runLocalizationCleaner({bool keepUnused = false}) {
-  final File yamlFile = File('l10n.yaml'); // Path to your l10n.yaml file
+  final File yamlFile = File('l10n.yaml'); // Path to the l10n.yaml file
   if (!yamlFile.existsSync()) {
     log('Error: l10n.yaml file not found!');
     return;
@@ -17,19 +17,12 @@ void runLocalizationCleaner({bool keepUnused = false}) {
 
   // Extract values dynamically
   final String arbDir = yamlData['arb-dir'] as String;
-  final String? outputDir = yamlData['output-dir'] as String?;
-  final String? outputFile = yamlData['output-localization-file'] as String?;
-  // final String locClassName = yamlData['output-class'] as String;
 
   // Construct values
   final Directory localizationDir = Directory(arbDir);
-  // final Set<String> excludedFiles = {'$outputDir/$outputFile'};
-  final Set<String> excludedFiles = {'lib/l10n/app_localizations.dart'};
-  if (outputDir == null || outputFile == null) {
-    excludedFiles.add('$outputDir/$outputFile');
-  }
+  final Set<String> excludedFiles = {'$arbDir/app_localizations.dart'};
 
-  //read arb file
+  // Read .arb file
   final List<File> localizationFiles =
       localizationDir
           .listSync()
@@ -57,7 +50,8 @@ void runLocalizationCleaner({bool keepUnused = false}) {
 
   final Set<String> usedKeys = <String>{};
   final Directory libDir = Directory('lib');
-  //improve Reg Exp
+
+  // Reg Exp to detect localization keys
   final String keysPattern = allKeys.map(RegExp.escape).join('|');
   final RegExp regex = RegExp(
     r'(?:' // Start non-capturing group for all possible access patterns
@@ -74,13 +68,14 @@ void runLocalizationCleaner({bool keepUnused = false}) {
     dotAll: true, // Makes `.` match newlines (crucial for multi-line cases)
   );
 
+  // Scan Dart files for key usage
   for (final FileSystemEntity file in libDir.listSync(recursive: true)) {
     if (file is File &&
         file.path.endsWith('.dart') &&
         !excludedFiles.contains(file.path)) {
       final String content = file.readAsStringSync();
 
-      // Quick pre-check: Skip files that don't contain any key substring
+      // Quick pre-check: skip files that don't contain any key substring
       if (!content.contains(RegExp(keysPattern))) continue;
 
       for (final Match match in regex.allMatches(content)) {
