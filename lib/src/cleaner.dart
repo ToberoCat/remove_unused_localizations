@@ -17,13 +17,17 @@ void runLocalizationCleaner({bool keepUnused = false}) {
 
   // Extract values dynamically
   final String arbDir = yamlData['arb-dir'] as String;
-  final String outputDir = yamlData['output-dir'] as String;
-  final String outputFile = yamlData['output-localization-file'] as String;
+  final String? outputDir = yamlData['output-dir'] as String?;
+  final String? outputFile = yamlData['output-localization-file'] as String?;
   // final String locClassName = yamlData['output-class'] as String;
 
   // Construct values
   final Directory localizationDir = Directory(arbDir);
-  final Set<String> excludedFiles = {'$outputDir/$outputFile'};
+  // final Set<String> excludedFiles = {'$outputDir/$outputFile'};
+  final Set<String> excludedFiles = {'lib/l10n/app_localizations.dart'};
+  if (outputDir == null || outputFile == null) {
+    excludedFiles.add('$outputDir/$outputFile');
+  }
 
   //read arb file
   final List<File> localizationFiles =
