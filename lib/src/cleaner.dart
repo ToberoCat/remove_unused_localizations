@@ -47,38 +47,61 @@ void runLocalizationCleaner({bool keepUnused = false}) {
     fileKeyMap[file] = keys;
   }
 
+  if (allKeys.isEmpty) {
+    print('✅ No localization keys found in the provided ARB files.');
+    return;
+  }
+
   final Set<String> usedKeys = <String>{};
-  final Directory libDir = Directory('lib');
+  final List<Directory> sourceDirectories = <Directory>[
+    Directory('lib'),
+    Directory('test'),
+    Directory('integration_test'),
+    Directory('bin'),
+  ].where((Directory dir) => dir.existsSync()).toList();
 
   // Reg Exp to detect localization keys
   final String keysPattern = allKeys.map(RegExp.escape).join('|');
-  final RegExp regex = RegExp(
-    r'(?:' // Start non-capturing group for all possible access patterns
-            r'(?:[a-zA-Z0-9_]+\.)+' // e.g., `_appLocalizations.` or `cubit.appLocalizations.`
-            r'|'
-            r'[a-zA-Z0-9_]+\.of\(\s*(?:context|AppNavigation\.context|this\.context|BuildContext\s+\w+)\s*\)\!?\s*\.\s*' // `of(context)!.key` with optional whitespace
-            r'|'
-            r'[a-zA-Z0-9_]+\.\w+\(\s*\)\s*\.\s*' // `SomeClass.method().key`
-            r')'
-            r'(' +
-        keysPattern +
-        r')\b', // The actual key
+  final RegExp quickCheckRegex = RegExp(keysPattern);
+  final String keyCapturePattern = '($keysPattern)(?=(?:\\s*\\()|\\b)';
+  final RegExp accessRegex = RegExp(
+    '(?:' // Start non-capturing group for all possible access patterns
+        '(?:[a-zA-Z0-9_]+(?:\\?|!)?\\.)+' // e.g., `_appLocalizations.` or `cubit.appLocalizations.` with null-aware/assert
+        '|'
+        '[a-zA-Z0-9_]+\\.of\\(\\s*(?:context|AppNavigation\\.context|this\\.context|BuildContext\\s+\\w+)\\s*\\)\\s*(?:\\?|!)?\\s*\\.\\s*' // `of(context)!.key` or `?.key`
+        '|'
+        '[a-zA-Z0-9_]+\\.\\w+\\(\\s*\\)\\s*(?:\\?|!)?\\s*\\.\\s*' // `SomeClass.method().key` variants
+        ')'
+        '$keyCapturePattern',
     multiLine: true,
     dotAll: true, // Makes `.` match newlines (crucial for multi-line cases)
   );
+  final RegExp rawStringRegex = RegExp(
+    '(?:r|R)?([\'"]{1,3})($keysPattern)\\1', // Matches string literals that contain only the key
+    multiLine: true,
+    dotAll: true,
+  );
 
   // Scan Dart files for key usage
-  for (final FileSystemEntity file in libDir.listSync(recursive: true)) {
-    if (file is File &&
-        file.path.endsWith('.dart') &&
-        !excludedFiles.contains(file.path)) {
-      final String content = file.readAsStringSync();
+  for (final Directory sourceDir in sourceDirectories) {
+    for (final FileSystemEntity entity in sourceDir.listSync(recursive: true)) {
+      if (entity is! File ||
+          !entity.path.endsWith('.dart') ||
+          excludedFiles.contains(entity.path)) {
+        continue;
+      }
+
+      final String content = entity.readAsStringSync();
 
       // Quick pre-check: skip files that don't contain any key substring
-      if (!content.contains(RegExp(keysPattern))) continue;
+      if (!quickCheckRegex.hasMatch(content)) continue;
 
-      for (final Match match in regex.allMatches(content)) {
+      for (final Match match in accessRegex.allMatches(content)) {
         usedKeys.add(match.group(1)!); // Capture only the key
+      }
+
+      for (final Match match in rawStringRegex.allMatches(content)) {
+        usedKeys.add(match.group(2)!);
       }
     }
   }
